@@ -28,11 +28,15 @@ jobs:
         
     - name: Install Maven 3.9
       run: |
-        MAVEN_VERSION=3.9.0
-        wget https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz
-        tar xzvf apache-maven-${MAVEN_VERSION}-bin.tar.gz
-        sudo mv apache-maven-${MAVEN_VERSION} /opt/maven
-        sudo ln -s /opt/maven/bin/mvn /usr/bin/mvn
+          if ! command -v mvn &> /dev/null; then
+              MAVEN_VERSION=3.9.0
+              wget https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz
+              tar xzvf apache-maven-${MAVEN_VERSION}-bin.tar.gz
+              sudo mv apache-maven-${MAVEN_VERSION} /opt/maven
+              sudo ln -s /opt/maven/bin/mvn /usr/bin/mvn
+          else
+              echo "Maven is already installed"
+          fi
       env:
         MAVEN_HOME: /opt/maven
           
