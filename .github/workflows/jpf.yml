@@ -27,8 +27,9 @@ jobs:
           
     - name: Build project with JDK 17
       run: |
-          sudo apt-get update
-          sudo apt-get install -y maven=3.9.0-5
+          wget https://dlcdn.apache.org/maven/maven-3/3.9.7/binaries/apache-maven-3.9.7-bin.tar.gz
+          tar xzf apache-maven-3.9.7-bin.tar.gz -C /opt
+          sudo ln -s /opt/apache-maven-3.9.7/bin/mvn /usr/local/bin/mvn
           mvn clean install -DskipTests
 
     - name: Set up JDK 11 for JPF
