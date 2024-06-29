@@ -37,13 +37,22 @@ jobs:
         brew install npm
         npm cache clean --force
     
-    - name: Build project with JDK 17
+    - name: Build project with JDK 17 (Linux)
+      if: runner.os == 'Linux'
       run: |
           wget https://dlcdn.apache.org/maven/maven-3/3.9.7/binaries/apache-maven-3.9.7-bin.tar.gz
           tar xzf apache-maven-3.9.7-bin.tar.gz -C /opt
           sudo ln -s /opt/apache-maven-3.9.7/bin/mvn /usr/local/bin/mvn
           mvn clean install -DskipTests
 
+    - name: Build project with JDK 17 (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        wget https://dlcdn.apache.org/maven/maven-3/3.9.7/binaries/apache-maven-3.9.7-bin.tar.gz
+        sudo tar xzf apache-maven-3.9.7-bin.tar.gz -C /opt
+        sudo ln -s /opt/apache-maven-3.9.7/bin/mvn /usr/local/bin/mvn
+        mvn clean install -DskipTests
+    
     - name: Set up JDK 11 for JPF
       uses: actions/setup-java@v3
       with:
