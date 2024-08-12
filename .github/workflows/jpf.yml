@@ -64,10 +64,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: powershell
       run: |
-        powershell -Command "Invoke-WebRequest -Uri 'https://dlcdn.apache.org/maven/maven-3/3.9.7/binaries/apache-maven-3.9.7-bin.zip' -OutFile 'apache-maven-3.9.7-bin.zip'"
-        powershell -Command "Expand-Archive -Path 'apache-maven-3.9.7-bin.zip' -DestinationPath 'C:\Program Files\Apache\maven-3.9.7' -Force"
-        [System.Environment]::SetEnvironmentVariable('PATH', [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::Machine) + ';C:\Program Files\Apache\maven-3.9.7\bin', [System.EnvironmentVariableTarget]::Machine)
-        mvn clean install -DskipTests
+        mvn clean install -DskipTests -pl !Zipkin Server
     
     - name: Set up JDK 11 for JPF
       uses: actions/setup-java@v3
