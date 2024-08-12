@@ -46,8 +46,9 @@ jobs:
     
     - name: NPM Resolution (Windows)
       if: runner.os == 'Windows'
+      shell: powershell
       run: |
-        @powershell -Command "Start-Process cmd.exe -ArgumentList '/c choco install npm -y' -NoNewWindow -Wait"
+        choco install npm -y'
         npm cache clean --force
 
     - name: Build project with JDK 17 (Linux)
@@ -68,6 +69,7 @@ jobs:
 
     - name: Build project with JDK 17 (Windows)
       if: runner.os == 'Windows'
+      shell: powershell
       run: |
         powershell -Command "Invoke-WebRequest -Uri 'https://dlcdn.apache.org/maven/maven-3/3.9.7/binaries/apache-maven-3.9.7-bin.zip' -OutFile 'apache-maven-3.9.7-bin.zip'"
         powershell -Command "Expand-Archive -Path 'apache-maven-3.9.7-bin.zip' -DestinationPath 'C:\Program Files\Apache\maven-3.9.7' -Force"
