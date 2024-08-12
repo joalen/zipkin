@@ -36,19 +36,12 @@ jobs:
         brew update
         brew install npm
         npm cache clean --force
-
-    - name: Install Chocolatey
-      if: runner.os == 'Windows'
-      shell: powershell
-      run: |
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        iex "& { $(irm https://chocolatey.org/install.ps1 -UseBasicP) }"
     
     - name: NPM Resolution (Windows)
       if: runner.os == 'Windows'
       shell: powershell
       run: |
-        choco install npm -y'
+        choco install npm -y
         npm cache clean --force
 
     - name: Build project with JDK 17 (Linux)
