@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-latest]
+        os: [ubuntu-22.04, macos-latest, windows-latest]
 
     steps:
     - name: Checkout repository
@@ -36,7 +36,13 @@ jobs:
         brew update
         brew install npm
         npm cache clean --force
-    
+        
+    - name: NPM Resolution (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        @powershell -Command "Start-Process cmd.exe -ArgumentList '/c choco install npm -y' -NoNewWindow -Wait"
+        npm cache clean --force
+
     - name: Build project with JDK 17 (Linux)
       if: runner.os == 'Linux'
       run: |
@@ -52,6 +58,14 @@ jobs:
         sudo tar xzf apache-maven-3.9.7-bin.tar.gz -C /opt
         sudo ln -s /opt/apache-maven-3.9.7/bin/mvn /usr/local/bin/mvn
         mvn clean install -DskipTests
+
+    - name: Build project with JDK 17 (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        powershell -Command "Invoke-WebRequest -Uri 'https://dlcdn.apache.org/maven/maven-3/3.9.7/binaries/apache-maven-3.9.7-bin.zip' -OutFile 'apache-maven-3.9.7-bin.zip'"
+        powershell -Command "Expand-Archive -Path 'apache-maven-3.9.7-bin.zip' -DestinationPath 'C:\Program Files\Apache\maven-3.9.7' -Force"
+        [System.Environment]::SetEnvironmentVariable('PATH', [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::Machine) + ';C:\Program Files\Apache\maven-3.9.7\bin', [System.EnvironmentVariableTarget]::Machine)
+        mvn clean install -DskipTests
     
     - name: Set up JDK 11 for JPF
       uses: actions/setup-java@v3
@@ -60,17 +74,25 @@ jobs:
         java-version: '11'
 
     - name: Clone and build jpf-core
+      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
       run: |
         git clone https://github.com/javapathfinder/jpf-core.git /tmp/jpf-core
-        cd /tmp/jpf-core
+        cd /tmp/jpf-core && git checkout 0916082fac91405e11ec7ce55f9068ce84d61aaa
         ./gradlew buildJars
 
+    - name: Clone and build jpf-core
+      if: runner.os == 'Windows'
+      run: | 
+        git clone https://github.com/javapathfinder/jpf-core.git /tmp/jpf-core
+        cd /tmp/jpf-core && git checkout 0916082fac91405e11ec7ce55f9068ce84d61aaa
+        ./gradlew.bat buildJars
+        
     - name: Run JPF on JAR files
+      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
       shell: bash
       run: |
         #!/bin/bash
         set +e 
-
         mkdir jpf_reports
         directory=$(pwd)
         runjpf_jar="/tmp/jpf-core/build/RunJPF.jar"
@@ -90,6 +112,41 @@ jobs:
             command="java -jar $runjpf_jar +classpath=$jar_file $main_class" 
             $command > "./jpf_reports/${main_class}_jpf_report.txt"
         done
+
+    - name: Run JPF on JAR files
+      if: runner.os == 'Windows'
+      shell: cmd 
+      run: | 
+        @echo off
+        setlocal enabledelayedexpansion
+        
+        mkdir jpf_reports
+        
+        set "directory=%cd%"
+        set "runjpf_jar=C:\path\to\jpf-core\build\RunJPF.jar"
+        
+        for /r %%i in (*.jar) do (
+            echo %%i | findstr /i "SNAPSHOT" >nul 2>&1
+            if !errorlevel! neq 0 (
+                jar tf "%%i" | findstr /i "META-INF\MANIFEST.MF" >nul 2>&1
+                if !errorlevel! equ 0 (
+                    mkdir META-INF 2>nul
+                    jar xf "%%i" META-INF/MANIFEST.MF
+                    if exist META-INF\MANIFEST.MF (
+                        for /f "tokens=2 delims=: " %%j in ('findstr /i "Main-Class" META-INF\MANIFEST.MF') do (
+                            set "main_class=%%j"
+                            set "main_class=!main_class: =!"
+                            set "main_class=!main_class:"=!%%"
+        
+                            java -jar "%runjpf_jar%" +classpath="%%i" !main_class! > "jpf_reports\!main_class!_jpf_report.txt"
+                        )
+                    )
+                    rmdir /s /q META-INF
+                )
+            )
+        )
+        
+        endlocal
 
     - name: Upload JPF reports
       uses: actions/upload-artifact@v4
